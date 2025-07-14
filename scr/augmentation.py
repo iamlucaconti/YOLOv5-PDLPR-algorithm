@@ -5,8 +5,9 @@ from PIL import Image, ImageFilter, ImageDraw
 from torchvision import transforms
 import torchvision.transforms.functional as TF
 import random
+import torch
 
-import torchvision.transforms.functional as TF
+
 class RandomColorPad:
     def __init__(self, pad_y_range=(5, 15), pad_x_range=(10, 30), color_pad = "black"):
         self.pad_y_range = pad_y_range  # (min_y, max_y)
@@ -291,3 +292,56 @@ class BluePlateHighlight:
         # Convert back to PIL
         img_np = (img_np * 255).astype(np.uint8)
         return Image.fromarray(img_np)
+
+
+
+class BlockShiftTransform:
+    def __init__(self, 
+                 direction='both', 
+                 num_blocks_range_horizontal=(4, 12), 
+                 num_blocks_range_vertical=(4, 12), 
+                 max_shift=10, 
+                 p=0.5):
+        """
+        direction: 'horizontal', 'vertical', or 'both'
+        num_blocks_range_horizontal: tuple (min, max) blocchi orizzontali
+        num_blocks_range_vertical: tuple (min, max) blocchi verticali
+        max_shift: massimo spostamento (in pixel) per blocco
+        p: probabilità di applicare la trasformazione
+        """
+        self.direction = direction
+        self.num_blocks_range_horizontal = num_blocks_range_horizontal
+        self.num_blocks_range_vertical = num_blocks_range_vertical
+        self.max_shift = max_shift
+        self.p = p
+
+    def __call__(self, img):
+        if random.random() > self.p:
+            return img
+        
+        img = TF.to_tensor(img)
+        C, H, W = img.shape
+
+        img_np = img.permute(1, 2, 0).numpy()  # H x W x C
+
+        if self.direction in ['horizontal', 'both']:
+            num_blocks = random.randint(*self.num_blocks_range_horizontal)
+            block_height = H // num_blocks
+            for i in range(num_blocks):
+                y_start = i * block_height
+                y_end = H if i == num_blocks - 1 else (i + 1) * block_height
+                shift = random.randint(-self.max_shift, self.max_shift)
+                img_np[y_start:y_end] = np.roll(img_np[y_start:y_end], shift, axis=1)
+
+        if self.direction in ['vertical', 'both']:
+            num_blocks = random.randint(*self.num_blocks_range_vertical)
+            block_width = W // num_blocks
+            for i in range(num_blocks):
+                x_start = i * block_width
+                x_end = W if i == num_blocks - 1 else (i + 1) * block_width
+                shift = random.randint(-self.max_shift, self.max_shift)
+                img_np[:, x_start:x_end] = np.roll(img_np[:, x_start:x_end], shift, axis=0)
+
+        img_out = torch.tensor(img_np).permute(2, 0, 1).clamp(0, 1)
+
+        return TF.to_pil_image(img_out)
