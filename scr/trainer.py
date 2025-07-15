@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
 import random
+import time
 
 def set_seed(seed: int = 42):
     torch.manual_seed(seed)
@@ -184,8 +185,10 @@ def train(train_loader,
     return model, train_losses, val_losses
 
 
+
+
 def evaluate_model(model, data_loader, char2idx, device='cuda'):
-    """Valuta il modello su un data_loader (es. test set)."""
+    """Valuta il modello su un data_loader (es. test set) e calcola gli FPS medi."""
     model.eval()
     blank_idx = char2idx['-']
     ctc_loss = nn.CTCLoss(blank=blank_idx, zero_infinity=True)
@@ -193,6 +196,9 @@ def evaluate_model(model, data_loader, char2idx, device='cuda'):
     total_loss = 0
     all_preds = []
     all_targets = []
+    total_images = 0
+
+    start_time = time.time()
 
     with torch.no_grad():
         for images, labels in data_loader:
@@ -200,6 +206,8 @@ def evaluate_model(model, data_loader, char2idx, device='cuda'):
             labels = labels.to(device)
 
             batch_size, seq_len = labels.shape
+            total_images += batch_size
+
             targets = labels.view(-1)
             target_lengths = torch.full((batch_size,), seq_len, dtype=torch.long, device=device)
 
@@ -219,9 +227,14 @@ def evaluate_model(model, data_loader, char2idx, device='cuda'):
                 all_preds.append(pred)
                 all_targets.append(target)
 
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    avg_fps = total_images / elapsed_time if elapsed_time > 0 else float('inf')
+
     avg_loss = total_loss / len(data_loader)
     char_acc = character_accuracy(all_preds, all_targets)
     seq_acc = sequence_accuracy(all_preds, all_targets)
 
-    print(f"Evaluation | Loss: {avg_loss:.4f} | Char Acc: {char_acc:.4f} | Seq Acc: {seq_acc:.4f}")
-    return avg_loss, char_acc, seq_acc
+    print(f"Evaluation | Loss: {avg_loss:.4f} | Char Acc: {char_acc:.4f} | Seq Acc: {seq_acc:.4f} | FPS: {avg_fps:.2f}")
+    return avg_loss, char_acc, seq_acc, avg_fps
+

@@ -19,8 +19,11 @@ class PDLPR(nn.Module):
             enc_unit=units,
             n_heads=n_heads)
 
-        self.cnn3 = CNNBlock(d_embed, d_embed, kernel_size=(2, 1), stride=(3, 1), padding=(1, 0))
-        self.cnn4 = CNNBlock(d_embed, d_embed, kernel_size=(1, 2), stride=(1, 3), padding=(0,0))
+        # self.cnn3 = CNNBlock(d_embed, d_embed, kernel_size=(2, 1), stride=(3, 1), padding=(1, 0))
+        # self.cnn4 = CNNBlock(d_embed, d_embed, kernel_size=(1, 2), stride=(1, 3), padding=(0,0))
+        self.cnn3 = CNNBlock(d_embed, d_embed, kernel_size=(3, 1), stride=(3, 1), padding=(1, 0))
+        self.cnn4 = CNNBlock(d_embed, d_embed, kernel_size=(2, 1), stride=(1, 1), padding=(0,0))
+
 
         self.decoder = Decoder(
             height = height,
