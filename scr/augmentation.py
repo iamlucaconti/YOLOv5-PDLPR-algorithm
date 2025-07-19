@@ -187,6 +187,7 @@ class AddFog:
         alpha = random.uniform(*self.fog_factor)
         return Image.blend(img, fog, alpha)
 
+
 class MatrixEffect:
     def __init__(self, p=0.5, intensity=(0.4, 0.8)):
         """
@@ -345,3 +346,389 @@ class BlockShiftTransform:
         img_out = torch.tensor(img_np).permute(2, 0, 1).clamp(0, 1)
 
         return TF.to_pil_image(img_out)
+
+
+class DitherEffect:
+    def __init__(self, dither=Image.FLOYDSTEINBERG, palette_mode='P', p=1.0):
+        self.dither = dither
+        self.palette_mode = palette_mode
+        self.p = p
+
+    def __call__(self, img):
+        if random.random() < self.p:
+            img = img.convert(self.palette_mode, dither=self.dither)
+            img = img.convert('RGB')
+        return img
+    
+# -----------------------------------------------------------------------------------------------
+## Simulate DB
+LowResolutionTransform = transforms.Compose([
+    transforms.Resize((24, 72), interpolation=transforms.InterpolationMode.BILINEAR),  # downscale
+    transforms.Resize((48, 144), interpolation=transforms.InterpolationMode.BILINEAR)  # upscale
+])
+
+transform_night = transforms.Compose([
+
+    transforms.RandomApply([
+        transforms.RandomAffine(
+            scale=(0.9, 1.1),
+            degrees=(-8, 8),              # to simulate "rotate", "tilt". "challenge"
+            translate=(0.0, 0.10),
+            shear=(-15, 15, -5, -5),                
+            fill=0
+        )], p=0.6),
+    
+    transforms.RandomPerspective(distortion_scale=0.20, p=0.50),
+     
+    transforms.RandomApply([
+    RandomLightBeam(intensity=(0.1, 0.3), angle_range=(-45, 45), beam_width_range=(10, 60), beam_type = "black")],
+                            p=0.6),
+
+    transforms.RandomApply([
+    RandomLightBeam(intensity=(0.1, 0.3), angle_range=(-45, 45), beam_width_range=(10, 60), beam_type = "black")],
+                            p=0.6),
+    
+    
+    MatrixEffect(intensity=(0.5, 0.6), p=0.9),
+    BluePlateHighlight(intensity_range=(1, 2), p=0.9),
+    
+    
+    # DitherEffect(dither=Image.NONE, palette_mode='P', p=0.9),
+    
+    RandomMotionBlur(kernel_size=(5, 7), p=0.3),
+    RandomGaussianBlur(radius=(0.5, 0.8), p=0.8),
+    
+    #   transforms.RandomApply([
+    #     LowResolutionTransform
+    # ], p=0.5),
+    
+    transforms.RandomApply([
+        transforms.ColorJitter(  
+            brightness=(0.4, 0.7),     
+            contrast=(1, 2.5),       
+            )], p=0.70),
+    
+    
+    transforms.RandomApply([
+        transforms.ColorJitter(       
+            saturation=(0.5, 1),     
+            )], p=0.60),
+   
+    transforms.RandomApply([
+        transforms.ColorJitter(   
+            brightness=(0.5, 0.9),     
+            contrast=(1, 2),       
+            )], p=0.70),
+
+    transforms.RandomApply([
+        transforms.ColorJitter(     
+            # contrast=(1, 2),       
+            saturation=(0.4, 1),     
+            )], p=0.20),
+
+    SimulateDistance(scale_range=(0.6, 0.9), p=0.4), 
+    
+    transforms.ToTensor()
+])
+
+
+# Simulate brightness
+transform_day = transforms.Compose([
+        transforms.RandomApply([
+        transforms.RandomAffine(
+            scale=(0.9, 1.1),
+            degrees=(-10, 10),              # to simulate "rotate", "tilt". "challenge"
+            translate=(0.0, 0.10),
+            shear=(-15, 15, -10, -10),                
+            fill=0
+        )
+    ], p=0.4),
+    
+    transforms.RandomPerspective(distortion_scale=0.20, p=0.20),
+    
+    transforms.RandomApply([
+        transforms.ColorJitter(   # For "db" and "challenge" datasets
+            brightness=(1.2, 2),     
+            contrast=(1, 1.5),       
+            saturation=(0.6, 1.4),     
+            hue=(-0.05, 0.05)),
+    ], p=0.8),
+    
+     DitherEffect(dither=Image.FLOYDSTEINBERG, palette_mode='P', p=0.7),
+     RandomMotionBlur(kernel_size=(5, 7), p=0.30),
+    
+    transforms.RandomApply([
+        LowResolutionTransform
+    ], p=0.6),
+    
+    transforms.RandomApply([
+    RandomLightBeam(intensity=(0.5, 0.9), angle_range=(-60, 60), beam_width_range=(20, 80), beam_type = "white")],
+                            p=0.4),
+    
+    
+    AddFog(fog_factor=(0.2, 0.7), p=0.6),
+    
+    SimulateDistance(scale_range=(0.6, 0.9), p=0.8), 
+    
+    transforms.CenterCrop((48, 144)),
+    transforms.ToTensor()
+])
+
+## Simulate FN
+# To handle CPD-FN: The distance from the LP to the shooting location is relatively far or near.
+LowResolutionTransform = transforms.Compose([
+    transforms.Resize((24, 72), interpolation=transforms.InterpolationMode.BILINEAR),  # downscale
+    transforms.Resize((48, 144), interpolation=transforms.InterpolationMode.BILINEAR)  # upscale
+])
+
+transform_fn = transforms.Compose([
+
+    transforms.RandomApply([
+        transforms.ColorJitter(   # For "db" and "challenge" datasets
+             brightness=(0.6, 1.0),     
+            contrast=(0.8, 1.2),       
+            saturation=(0.4, .8),     
+            hue=(-0.05, 0.05)),
+    ], p=0.8),
+
+    transforms.RandomApply([
+        transforms.RandomAffine(
+            # scale=(0.9, 1.1),
+            degrees=(-5, 5),              # to simulate "rotate", "tilt". "challenge"
+            # translate=(0.10, 0.10),
+            shear=(-10, 10, -10, 10),                
+            fill=0
+        )
+    ], p=0.3),
+    
+    DitherEffect(dither=Image.FLOYDSTEINBERG, palette_mode='P', p=0.4),
+    RandomMotionBlur(kernel_size=(7, 9), p=0.6),
+    BlockShiftTransform(
+        direction='both',
+        num_blocks_range_horizontal=(8, 16),
+        num_blocks_range_vertical=(10, 20), 
+        max_shift=1, 
+        p=0.2
+    ),
+    
+    transforms.Resize((48, 144)),
+    transforms.RandomApply([
+        LowResolutionTransform
+    ], p=0.70),
+    
+    SimulateDistance(scale_range=(0.25, 0.45), p=0.4),
+    transforms.ToTensor()
+])
+
+
+## Simulate Blur
+LowResolutionBlur = transforms.Compose([
+    transforms.Resize((15, 45), interpolation=transforms.InterpolationMode.BILINEAR),  # downscale
+    transforms.Resize((48, 144), interpolation=transforms.InterpolationMode.NEAREST)])  # upscale
+                                            
+# To handle with CCPD-Blur
+transform_blur = transforms.Compose([
+
+    BluePlateHighlight(intensity_range=(1, 1.6), p=0.6),
+    
+    transforms.RandomApply([
+        transforms.ColorJitter(
+            brightness=(0.7, 1.3),     
+            contrast=(0.7, 1.3),       
+            saturation=(0.7, 1.3),     
+            hue=(-0.1, 0.1)),
+    ], p=0.70),
+    
+    transforms.RandomApply([
+        transforms.RandomAffine(
+            scale=(0.9, 1),
+            degrees=(-10, 10),              # to simulate "rotate", "tilt". "challenge"
+            translate=(0.0, 0.10),
+            shear=(-10, 10, -10, 10),                
+            fill=0
+        )
+    ], p=0.5),
+    
+    DitherEffect(dither=Image.NONE, palette_mode='P', p=0.7),
+    DitherEffect(dither=Image.FLOYDSTEINBERG, palette_mode='P', p=0.7),
+    DitherEffect(dither=Image.FLOYDSTEINBERG, palette_mode='P', p=0.7),
+    
+    RandomMotionBlur(kernel_size=(5, 7), p=0.9),
+    
+    transforms.RandomApply([
+        LowResolutionBlur
+    ], p=0.90),
+    
+    RandomGaussianBlur(radius=(0.4, 0.9), p=0.9),
+    transforms.ToTensor()
+])
+
+
+## Simulate rot
+# CCPD-Rotate Great horizontal tilt degree (20◦ - 50◦) and the vertical tilt degree varies from -10◦ to 10◦.
+transform_rot = transforms.Compose([
+    transforms.RandomApply([RandomColorPad(pad_y_range=(55, 60), pad_x_range=(30, 35), color_pad='random')], p=0.99),
+    
+    transforms.RandomApply([
+        transforms.ColorJitter(
+            brightness=(0.6, 1.4),     
+            contrast=(0.6, 1.4),       
+            saturation=(0.6, 1.4),     
+            hue=(-0.08, 0.08)),
+    ], p=0.90),
+    
+    transforms.RandomApply([
+        transforms.RandomAffine(
+            scale=(0.8, 1),
+            degrees=(-20, 20),              # to simulate "rotate", "tilt". "challenge"
+            translate=(0.0, 0.0),
+            shear=(-10, 10, -10, 10),                
+            fill=0
+        )
+    ], p=0.95),
+    
+   transforms.RandomPerspective(distortion_scale=0.3, p=0.30),
+    
+    DitherEffect(dither=Image.FLOYDSTEINBERG, palette_mode='P', p=0.4),
+    DitherEffect(dither=Image.FLOYDSTEINBERG, palette_mode='P', p=0.4),
+    
+    RandomMotionBlur(kernel_size=(5, 7), p=0.4),
+    SimulateDistance(scale_range=(0.7, 1), p=0.30),
+
+    
+    transforms.CenterCrop((70, 150)),
+    transforms.Resize((48, 144)),
+    transforms.CenterCrop((44, 120)),
+    transforms.Resize((48, 144)),
+    transforms.ToTensor()
+])
+
+
+## Simulate Tilt
+# To handle with CCPD-Tilt Great horizontal tilt degree and vertical tilt degree.
+transform_tilt_1 = transforms.Compose([
+    transforms.RandomApply([RandomColorPad(pad_y_range=(55, 60), pad_x_range=(55, 60), color_pad='random')], p=1),
+    
+    transforms.RandomApply([
+        transforms.ColorJitter(
+            brightness=(0.8, 1.2),     
+            contrast=(0.8, 1.2),       
+            saturation=(0.8, 1.2),     
+            hue=(-0.1, 0.1)),
+    ], p=0.7),
+
+    transforms.RandomApply([
+        transforms.RandomAffine(
+            scale=(0.8, .9),
+            degrees=(-10, 10),              
+            shear=(-40, 40, -20, -15),                
+            fill=0
+        )
+    ], p=0.99),
+    
+    transforms.RandomPerspective(distortion_scale=0.4, p=0.40),
+    
+    DitherEffect(dither=Image.FLOYDSTEINBERG, palette_mode='P', p=0.4),
+    transforms.CenterCrop((70, 120)),
+    transforms.Resize((48, 144)),
+    
+    MatrixEffect(intensity=(0.8, 0.1), p=0.0),
+    RandomMotionBlur(kernel_size=(6, 8), p=0.2),
+    SimulateDistance(scale_range=(0.7, 1), p=0.20),
+   
+    transforms.ToTensor()
+])
+
+transform_tilt_2 = transforms.Compose([
+    transforms.RandomApply([RandomColorPad(pad_y_range=(55, 60), pad_x_range=(55, 60), color_pad='random')], p=1),
+    
+    transforms.RandomApply([
+        transforms.ColorJitter(
+            brightness=(0.8, 1.2),     
+            contrast=(0.8, 1.2),       
+            saturation=(0.8, 1.2),     
+            hue=(-0.1, 0.1)),
+    ], p=0.7),
+
+    transforms.RandomApply([
+        transforms.RandomAffine(
+            scale=(0.8, .9),
+            degrees=(-10, 10),              
+            shear=(-40, 40, 15, 20),                
+            fill=0
+        )
+    ], p=0.99),
+    
+    transforms.RandomPerspective(distortion_scale=0.4, p=0.40),
+    
+    DitherEffect(dither=Image.FLOYDSTEINBERG, palette_mode='P', p=0.4),
+    transforms.CenterCrop((70, 120)),
+    transforms.Resize((48, 144)),
+    
+    MatrixEffect(intensity=(0.8, 0.1), p=0.0),
+    RandomMotionBlur(kernel_size=(6, 8), p=0.2),
+    SimulateDistance(scale_range=(0.7, 1), p=0.20),
+   
+    transforms.ToTensor()
+])
+
+## Simulate Challenge
+LowResolutionChallenge = transforms.Compose([
+    transforms.Resize((15, 45), interpolation=transforms.InterpolationMode.BILINEAR),  # downscale
+    transforms.Resize((48, 144), interpolation=transforms.InterpolationMode.NEAREST)])  # upscale
+                                            
+# To handle with CCPD-Challenge: The most challenging images for LPDR to date.
+transform_challenge = transforms.Compose([
+     transforms.RandomApply([
+    RandomLightBeam(intensity=(0.2, 0.4), angle_range=(-60, 60), beam_width_range=(10, 70), beam_type = "black")],
+                            p=0.4),
+
+    transforms.RandomApply([
+    RandomLightBeam(intensity=(0.2, 0.4), angle_range=(-60, 60), beam_width_range=(10, 70), beam_type = "white")],
+                            p=0.4),
+
+    BluePlateHighlight(intensity_range=(1, 1.6), p=0.6),
+    
+    transforms.RandomApply([
+        transforms.ColorJitter(
+            brightness=(0.7, 1.3),     
+            contrast=(0.7, 1.3),       
+            saturation=(0.7, 1.3),     
+            hue=(-0.1, 0.1)),
+    ], p=0.70),
+    
+    transforms.RandomApply([
+        transforms.RandomAffine(
+            scale=(0.9, 1),
+            degrees=(-10, 10),              # to simulate "rotate", "tilt". "challenge"
+            translate=(0.0, 0.10),
+            shear=(-10, 10, -10, 10),                
+            fill=0
+        )
+    ], p=0.5),
+    
+     DitherEffect(dither=Image.NONE, palette_mode='P', p=0.7),
+    DitherEffect(dither=Image.FLOYDSTEINBERG, palette_mode='P', p=0.7),
+    DitherEffect(dither=Image.FLOYDSTEINBERG, palette_mode='P', p=0.7),
+    
+    BlockShiftTransform(
+        direction='both',
+        num_blocks_range_horizontal=(4, 8),
+        num_blocks_range_vertical=(8, 16), 
+        max_shift=1, 
+        p=0.6
+    ),
+    RandomMotionBlur(kernel_size=(5, 7), p=0.9),
+    transforms.RandomApply([
+        LowResolutionChallenge
+    ], p=0.90),
+    
+    RandomGaussianBlur(radius=(0.4, 0.9), p=0.9),
+    transforms.ToTensor()
+])
+
+# Only normalization (no augmentation) for the validation set
+val_transform = transforms.Compose([
+    transforms.Resize((48, 144)),
+    transforms.ToTensor(),
+])
