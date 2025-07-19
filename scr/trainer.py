@@ -411,6 +411,8 @@ def infer_and_evaluate_baseline(model, image_tensor, target_indices, char2idx, i
     return pred, loss.item(), char_acc, seq_acc
 
 def evaluate_baseline_recognizer(model, data_loader, idx2char, char2idx, device='cuda'):
+    import time
+
     model.eval()
     model = model.to(device)
 
@@ -419,6 +421,9 @@ def evaluate_baseline_recognizer(model, data_loader, idx2char, char2idx, device=
 
     total_loss = 0
     criterion = nn.CrossEntropyLoss(ignore_index=char2idx['-'])
+
+    total_images = 0
+    start_time = time.time()
 
     with torch.no_grad():
         for images, labels in data_loader:
@@ -439,11 +444,17 @@ def evaluate_baseline_recognizer(model, data_loader, idx2char, char2idx, device=
                 all_preds.append(pred)
                 all_targets.append(target)
 
+            total_images += images.size(0)
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    fps = total_images / elapsed_time if elapsed_time > 0 else 0
+
     # Metriche
     char_acc = character_accuracy(all_preds, all_targets)
     seq_acc = sequence_accuracy(all_preds, all_targets)
     avg_loss = total_loss / len(data_loader)
 
-    print(f"Loss: {avg_loss:.4f} | Char Acc: {char_acc:.4f} | Seq Acc: {seq_acc:.4f}")
+    print(f"Loss: {avg_loss:.4f} | Char Acc: {char_acc:.4f} | Seq Acc: {seq_acc:.4f} | FPS: {fps:.2f}")
 
-    return avg_loss, char_acc, seq_acc, all_preds, all_targets
+    return avg_loss, char_acc, seq_acc, all_preds, all_targets, fps
