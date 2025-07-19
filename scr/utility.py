@@ -8,7 +8,9 @@ import matplotlib.pyplot as plt
 import tarfile
 import gdown
 from torchvision.transforms.functional import to_pil_image
-
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 provinces = ["皖", "沪", "津", "渝", "冀", "晋", "蒙", "辽", "吉", "黑", "苏", "浙", "京", "闽", "赣",
              "鲁", "豫", "鄂", "湘", "粤", "桂", "琼", "川", "贵", "云", "藏", "陕", "甘", "青", "宁", "新", "警", "学", "O"]
@@ -256,3 +258,4 @@ def plot_batch_images(train_loader, idx2char, font):
 
     plt.tight_layout()
     plt.show()
+

@@ -2,11 +2,36 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
+from PIL import Image
+from torch.utils.data import Dataset
 from tqdm import tqdm
 import numpy as np
 import random
 import time
+import torch.nn.functional as F
+from utility import greedy_decode, decode_plate_from_list
+
+class PlateDataset(Dataset):
+    def __init__(self, df, transform=None):
+        self.df = df.reset_index(drop=True)
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, idx):
+        row = self.df.iloc[idx]
+        image = Image.open(row["image_path"]).convert("RGB")
+        
+        if isinstance(self.transform, list):
+            transform = random.choice(self.transform)
+            image = transform(image)
+        elif self.transform:
+            image = self.transform(image)
+        
+        label = row["label"]  # list
+        label_tensor = torch.tensor(label, dtype=torch.long)
+        return image, label_tensor
 
 def set_seed(seed: int = 42):
     torch.manual_seed(seed)
@@ -185,9 +210,7 @@ def train(train_loader,
     return model, train_losses, val_losses
 
 
-
-
-def evaluate_model(model, data_loader, char2idx, device='cuda'):
+def evaluate_pdlpr(model, data_loader, char2idx, device='cuda'):
     """Valuta il modello su un data_loader (es. test set) e calcola gli FPS medi."""
     model.eval()
     blank_idx = char2idx['-']
@@ -238,6 +261,58 @@ def evaluate_model(model, data_loader, char2idx, device='cuda'):
     print(f"Evaluation | Loss: {avg_loss:.4f} | Char Acc: {char_acc:.4f} | Seq Acc: {seq_acc:.4f} | FPS: {avg_fps:.2f}")
     return avg_loss, char_acc, seq_acc, avg_fps
 
+def infer_and_evaluate_pdlpr(model, image_tensor, target_indices, char2idx, idx2char, device='cuda'):
+    model = model.to(device)
+    model.eval()
+
+    def char_accuracy(pred, target):
+        matches = sum(p == t for p, t in zip(pred, target))
+        return matches / max(len(target), 1)
+
+    def sequence_accuracy(pred, target):
+        return int(pred == target)
+
+    # Assumiamo batch_size = 1
+    images = image_tensor.unsqueeze(0).to(device)       # (1, C, H, W)
+    targets = [target_indices.to(device)]               # list of tensors
+    target_lengths = torch.tensor([len(t) for t in targets], dtype=torch.long, device=device)
+    targets_concat = torch.cat(targets)                 # flatten targets
+
+    # Forward pass
+    logits = model(images)                              # (1, T, C)
+    log_probs = F.log_softmax(logits, dim=2)            # (1, T, C)
+
+    # Get raw argmax predictions per timestep (including blanks)
+    raw_preds = torch.argmax(log_probs, dim=2)[0]       # (T,)
+    raw_seq = ''.join([idx2char[idx.item()] for idx in raw_preds])
+
+    # Decoding (greedy with collapsing + blank removal)
+    blank_idx = char2idx['-']
+    decoded = greedy_decode(logits, blank_idx, idx2char)  # lista di stringhe (batch 1)
+    target_str = decode_plate_from_list(target_indices.tolist(), idx2char)
+
+    # Accuracy metrics
+    c_acc = char_accuracy(decoded[0], target_str)
+    s_acc = sequence_accuracy(decoded[0], target_str)
+
+    # Prepare input for CTC loss
+    log_probs_ctc = log_probs.permute(1, 0, 2)           # (T, N, C)
+    input_lengths = torch.full(size=(1,), fill_value=log_probs_ctc.size(0), dtype=torch.long).to(device)
+
+    # CTC Loss
+    ctc_loss_fn = nn.CTCLoss(blank=blank_idx, zero_infinity=True)
+    loss = ctc_loss_fn(log_probs_ctc, targets_concat, input_lengths, target_lengths)
+
+    # Print summary
+    print(f"Raw sequence (argmax per timestep): {raw_seq}")
+    print(f"Predetta:          {decoded[0]}")
+    print(f"Target:            {target_str}")
+    print(f"CTC Loss:          {loss.item():.4f}")
+    print(f"Len pred:          {len(decoded[0])}, Len true: {target_lengths.item()}")
+    print(f"Character Accuracy: {c_acc:.4f}")
+    print(f"Sequence Accuracy:  {s_acc}")
+
+    return decoded[0], loss.item()
 
 def train_baseline_recognizer(train_loader,
                          val_loader,
