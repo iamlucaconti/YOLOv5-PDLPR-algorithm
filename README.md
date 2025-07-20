@@ -19,6 +19,28 @@ The integration of these two components aims to deliver a robust and efficient s
 - Compare the performance of the proposed model with the baseline, underlining why the proposed model works better or not on recognizing and reconstructing the car plates.
 
 ---
+## Project Structure
+```
+PDLPR-algorithm/
+├── src/                         # Core source code
+│   ├── attention.py             # Self-attention and cross-attention modules
+│   ├── augmentation.py          # Data augmentation transformations
+│   ├── baseline.py              # Baseline license plate recognizer (CNN + BiLSTM)
+│   ├── decoder.py               # Decoder module for the PDLPR architecture
+│   ├── encoder.py               # Encoder module for the PDLPR architecture
+│   ├── feature\_extractor.py     # IGFE
+│   ├── pdlpr.py                 # Main PDLPR model structure
+│   ├── trainer.py               # Training and evaluation utilities
+│   ├── utility.py               # Helper functions: decoding, dataset creation, etc.
+│   └── README.md                # Documentation for baseline and PDLPR components
+├── presentation/                # Slides with results and analysis
+├── figures/                     # Figures used in README and presentation
+├── pdlpr-main.ipynb             # Notebook for training and evaluating PDLPR
+├── baseline-recognition.ipynb   # Notebook for training the baseline recognizer
+└── README.md                    # Project overview and documentation
+```
+
+---
 ## Dataset
 
 [CCPD](https://github.com/detectRecog/CCPD) (Chinese City Parking Dataset) is a large and diverse open-source dataset of Chinese license plates. Each image contains one license plate, and each plate includes seven characters:
@@ -74,18 +96,8 @@ We designed **ad-hoc transformations** tailored to the characteristics of the di
 The figure below illustrates examples of augmented license plate images:
 
 ![Data Augmentation](figures/augmentation.png)
----
-## Metric
 
-Since each image in the CCPD dataset contains only a **single license plate (LP)**, we focus on **accuracy** rather than recall. Each detector is allowed to predict **only one bounding box per image**.
 
-The evaluation is divided into three parts:
-
-- **Detection**:  For each image, the detector outputs a single bounding box. A detection is considered **correct** if the Intersection over Union (IoU) with the ground truth bounding box is greater than 70% (**IoU>0.7**)
-
- - **Recognition**: A recognition is considered correct only if **all characters** in the license plate are **correctly recognized**.
-
-- **Combined Detection and Recognition**:  A result is considered fully correct when the predicted bounding box has **IoU > 0.6**, and **all characters** in the license plate are correctly recognized.
 
 ---
 ## Baseline
@@ -122,6 +134,20 @@ It comprises three primary modules:
    - Predicts the final license plate sequence.  
 
 The training is performed using **CTC Loss**.
+
+---
+## Metric
+
+Since each image in the CCPD dataset contains only a **single license plate (LP)**, we focus on **accuracy** rather than recall. Each detector is allowed to predict **only one bounding box per image**.
+
+The evaluation is divided into three parts:
+
+- **Detection**:  For each image, the detector outputs a single bounding box. A detection is considered **correct** if the Intersection over Union (IoU) with the ground truth bounding box is greater than 70% (**IoU>0.7**)
+
+ - **Recognition**: A recognition is considered correct only if **all characters** in the license plate are **correctly recognized**.
+
+- **Combined Detection and Recognition**:  A result is considered fully correct when the predicted bounding box has **IoU > 0.6**, and **all characters** in the license plate are correctly recognized.
+
 
 ---
 ## Results
