@@ -43,7 +43,7 @@ def set_seed(seed: int = 42):
 
 
 def character_accuracy(preds, targets):
-    """Calcola la accuratezza a livello di carattere."""
+    """Computes character-level accuracy."""
     correct = 0
     total = 0
     for p, t in zip(preds, targets):
@@ -53,7 +53,7 @@ def character_accuracy(preds, targets):
 
 
 def sequence_accuracy(preds, targets):
-    """Calcola la accuratezza a livello di sequenza intera."""
+    """Computes sequence-level accuracy."""
     correct = sum(p == t for p, t in zip(preds, targets))
     return correct / len(targets)
 
@@ -78,11 +78,11 @@ def train(train_loader,
     best_val_loss = float('inf')
     last_decay_epoch = 0
 
-    # Salvataggio delle perdite per ogni epoca
+    # Saving losses in every epoch
     train_losses = []
     val_losses = []
 
-    # Caricamento checkpoint se disponibile
+    # Loading of checkpoint if provided
     if load_checkpoint_path and os.path.isfile(load_checkpoint_path):
         checkpoint = torch.load(load_checkpoint_path, map_location=device)
         model.load_state_dict(checkpoint['weights'])
@@ -90,7 +90,7 @@ def train(train_loader,
         start_epoch = checkpoint.get('epoch', 0)
         best_val_loss = checkpoint.get('best_loss', best_val_loss)
         last_decay_epoch = checkpoint.get('last_decay_epoch', 0)
-        print(f"Checkpoint caricato da {load_checkpoint_path}, ripartendo dall'epoca {start_epoch}")
+        print(f"Checkpoint loaded {load_checkpoint_path}, resuming from epoch {start_epoch}")
 
     if save_checkpoint_path:
         os.makedirs(save_checkpoint_path, exist_ok=True)
@@ -112,9 +112,6 @@ def train(train_loader,
             logits = model(images)  # (B, T, C)
             log_probs = logits.log_softmax(2).permute(1, 0, 2)  # (T, B, C)
             input_lengths = torch.full((batch_size,), log_probs.size(0), dtype=torch.long, device=device)
-            # print("Logits shape:", logits.shape)       # (B, 18, C)
-            # print("Log probs shape:", log_probs.shape) # (18, B, C)
-            # print("Input lengths:", input_lengths)     # [18, 18, ..., 18]
 
             loss = ctc_loss(log_probs, targets, input_lengths, target_lengths)
 
@@ -122,7 +119,7 @@ def train(train_loader,
             loss.backward()
             optimizer.step()
 
-            # Decode greedy per il training set
+            # greedy decode 
             with torch.no_grad():
                 pred_sequences = log_probs.permute(1, 0, 2).argmax(2)  # (B, T)
                 for pred, true_label in zip(pred_sequences, labels):
@@ -141,7 +138,7 @@ def train(train_loader,
         train_char_acc = character_accuracy(all_train_preds, all_train_targets)
         train_seq_acc = sequence_accuracy(all_train_preds, all_train_targets)
 
-        # Validazione
+        # Validation
         model.eval()
         total_val_loss = 0
         all_preds, all_targets = [], []
@@ -187,7 +184,7 @@ def train(train_loader,
                 for group in optimizer.param_groups:
                     old_lr = group['lr']
                     group['lr'] = old_lr * lr_decay_factor
-                print(f"Learning rate ridotto a {group['lr']:.2e} (val loss non migliorata)")
+                print(f"Learning rate reduced to {group['lr']:.2e}")
                 last_decay_epoch = epoch + 1
             else:
                 best_val_loss = avg_val_loss
@@ -204,14 +201,14 @@ def train(train_loader,
             }
             checkpoint_file = os.path.join(save_checkpoint_path, f"checkpoint_epoch{epoch + 1}.pt")
             torch.save(checkpoint, checkpoint_file)
-            print(f"Checkpoint salvato in {checkpoint_file}")
+            print(f"Checkpoint saved in {checkpoint_file}")
 
-    print("Training completato.")
+    print("Training completed.")
     return model, train_losses, val_losses
 
 
 def evaluate_pdlpr(model, data_loader, char2idx, device='cuda'):
-    """Valuta il modello su un data_loader (es. test set) e calcola gli FPS medi."""
+    """Evaluates the model on a data_loader (e.g., test set) and computes the average FPS."""
     model.eval()
     blank_idx = char2idx['-']
     ctc_loss = nn.CTCLoss(blank=blank_idx, zero_infinity=True)
@@ -241,7 +238,7 @@ def evaluate_pdlpr(model, data_loader, char2idx, device='cuda'):
             loss = ctc_loss(log_probs, targets, input_lengths, target_lengths)
             total_loss += loss.item()
 
-            # Decodifica greedy
+            # greedy decode
             pred_sequences = log_probs.permute(1, 0, 2).argmax(2)
             for pred, true_label in zip(pred_sequences, labels):
                 pred = torch.unique_consecutive(pred, dim=0)
@@ -272,7 +269,7 @@ def infer_and_evaluate_pdlpr(model, image_tensor, target_indices, char2idx, idx2
     def sequence_accuracy(pred, target):
         return int(pred == target)
 
-    # Assumiamo batch_size = 1
+    # Batch size=1
     images = image_tensor.unsqueeze(0).to(device)       # (1, C, H, W)
     targets = [target_indices.to(device)]               # list of tensors
     target_lengths = torch.tensor([len(t) for t in targets], dtype=torch.long, device=device)
@@ -311,8 +308,8 @@ def infer_and_evaluate_pdlpr(model, image_tensor, target_indices, char2idx, idx2
     print(f"Len pred:          {len(decoded[0])}, Len true: {target_lengths.item()}")
     print(f"Character Accuracy: {c_acc:.4f}")
     print(f"Sequence Accuracy:  {s_acc}")
-
     return decoded[0], loss.item()
+
 
 def train_baseline_recognizer(train_loader,
                          val_loader,
@@ -442,7 +439,7 @@ def train_baseline_recognizer(train_loader,
             torch.save(checkpoint, checkpoint_file)
             print(f"Checkpoint saved in {checkpoint_file}")
 
-    print("Training completato.")
+    print("Training completed.")
     return model, train_losses, val_losses
 
 

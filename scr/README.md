@@ -1,6 +1,4 @@
 
-
----
 ## Baseline
 
 ### Detection
@@ -24,7 +22,6 @@ The selected LSTM outputs, with shape `[B, 7, 1024]`, are passed through a fully
 
 The model is trained using **Cross Entropy Loss**, which compares the predicted logits with the ground-truth character labels.
 
----
 ## YOLOvs-PDLPR
 
 ### YOLOv5
@@ -33,7 +30,9 @@ The model is trained using **Cross Entropy Loss**, which compares the predicted 
 
 ### PDLPR
 
-The PDLPR model architecture is illustrated in the figure below and it comprises three primary modules:
+The PDLPR model architecture is illustrated in the figure below:
+![The overall framework of the license plate recognition algorithm.](/figures/pdlpr.png)
+It comprises three primary modules:
 
 1. **Improved Global Feature Extractor (IGFE)**  
    - Input: License plate images resized to `48 × 144` pixels.  
@@ -46,7 +45,7 @@ The PDLPR model architecture is illustrated in the figure below and it comprises
 3. **Parallel Decoder Module**  
    - Utilizes **Multi-Head Attention** to decode the encoder's output feature vector.  
    - Predicts the final license plate sequence.  
-
+---
 #### IGFE
 
 The **IGFE** module consists of a Focus Structure module, two ConvDownSampling modules, and four RESBLOCK modules. 
@@ -57,8 +56,9 @@ operation. A Focus Structure is better than other ways of downsampling because i
 - The structure of each **RESBLOCK** module consists of **two residually connected CNN BLOCK modules**. During forward inference, the residual connected structure could prevent the network’s gradient disappearance and explosion. In the CNN BLOCK module’s convolutional layer for extracting features, we utilized `Conv2d` with `stride = 1` and `kernelSize = 3` to extract features, which were then passed via the GroupNorm layer and activation function layer in order to extract the image’s visual features.The activation function made use of the SiLU . In our implementation of the RESBLOCK modules, we replaced the standard **Batch Normalization** and **LeakyReLU** (as originally used in [Tao et al.](https://www.mdpi.com/1424-8220/24/9/2791)) with Group Normalization (**GroupNorm**) and the **SiLU** activation function. This change was made to improve the model’s generalization and performance under varying data distributions and batch sizes.
 Unlike BatchNorm, which depends on batch statistics and tends to be unstable when using small batch sizes, **GroupNorm** normalizes over groups of channels rather than across the batch dimension. This makes it **more robust** in scenarios with small or varying batch sizes, **more consistent** in training and inference, since statistics are independent of the batch. and **well-suited** to applications like license plate detection, where image sizes, lighting, and conditions may vary significantly. We also replaced the **LeakyReLU** activation with **SiLU** (Sigmoid-Weighted Linear Unit), also known as **Swish**. SiLU is a smooth, non-monotonic activation function defined as $\text{SiLU}(x) = x \cdot \sigma(x)$, where $\sigma(x)$ is the sigmoid of $x$. SiLU has been shown to **improve optimization** due to its smoothness, **retain small negative values** (unlike ReLU variants which zero them out), **outperform ReLU/LeakyReLU** in several vision tasks, particularly when paired with normalization techniques like GroupNorm.
 
-- **ConvDownSampling** modules are similar in structure to the **CNN BLOCK**, but they use a `Conv2D` layer with `stride = 1` and `kernel size = 3`.The first ConvDownSampling modules has 256 output channels while the second one has 512 output channels
+- **ConvDownSampling** modules are similar in structure to the **CNN BLOCK**, but they use a `Conv2D` layer with `stride = 1` and `kernel size = 3`.The first ConvDownSampling modules has 256 output channels while the second one has 512 output channels.
 
+---
 #### Encoder
 As in the original paper ([Tao et al.](https://www.mdpi.com/1424-8220/24/9/2791)), the **Encoder** consists of three encoding units connected via residual connections. Each unit includes four submodules:
 
@@ -79,7 +79,8 @@ After attention is computed, **CNN BLOCK2** is used to reduce the feature dimens
 
 Finally, the **Add & Norm** module connects the input and output of the attention mechanism via a residual connection and applies **Layer Normalization**. 
 
-### Parallel Decoder
+---
+#### Parallel Decoder
 
 The **CNN BLOCK3** and **CNN BLOCK4** adjust the dimensionality of the encoder’s output feature vector to `512 × 1 × 18` before decoding. This dimensionality reduction helps to lower the computational load on the parallel decoder.
 

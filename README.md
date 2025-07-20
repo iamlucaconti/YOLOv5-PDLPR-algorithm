@@ -1,5 +1,5 @@
 # YOLOv5-PDLPR algorithm
----
+
 ## Task
 The objective of this project is to design and implement a deep learning-based system for license plate recognition, following the methodology outlined by [Tao et al.](https://www.mdpi.com/1424-8220/24/9/2791) (2024). The proposed solution is structured as a two-stage pipeline, leveraging the strengths of different neural network architectures to address the distinct subtasks involved in the recognition process.
 
@@ -9,7 +9,7 @@ The objective of this project is to design and implement a deep learning-based s
 
 The integration of these two components aims to deliver a robust and efficient system for plate recognition and reconstruction suitable for deployment in real-world scenarios.
 
----
+
 ## Main Objectives
 
 - Implement a simple baseline, train and evaluate it with the metrics used by [Tao et al.](https://www.mdpi.com/1424-8220/24/9/2791) (2024).
@@ -18,7 +18,7 @@ The integration of these two components aims to deliver a robust and efficient s
 
 - Compare the performance of the proposed model with the baseline, underlining why the proposed model works better or not on recognizing and reconstructing the car plates.
 
----
+
 ## Project Structure
 ```
 PDLPR-algorithm/
@@ -28,19 +28,21 @@ PDLPR-algorithm/
 │   ├── baseline.py              # Baseline license plate recognizer (CNN + BiLSTM)
 │   ├── decoder.py               # Decoder module for the PDLPR architecture
 │   ├── encoder.py               # Encoder module for the PDLPR architecture
-│   ├── feature\_extractor.py     # IGFE
+│   ├── feature_extractor.py     # IGFE
 │   ├── pdlpr.py                 # Main PDLPR model structure
 │   ├── trainer.py               # Training and evaluation utilities
 │   ├── utility.py               # Helper functions: decoding, dataset creation, etc.
 │   └── README.md                # Documentation for baseline and PDLPR components
+│
 ├── presentation/                # Slides with results and analysis
 ├── figures/                     # Figures used in README and presentation
+│
 ├── pdlpr-main.ipynb             # Notebook for training and evaluating PDLPR
+├── inference-yolov5-pdlpr.ipynb # Notebook for YOLOv5+PDLPR
 ├── baseline-recognition.ipynb   # Notebook for training the baseline recognizer
 └── README.md                    # Project overview and documentation
 ```
 
----
 ## Dataset
 
 [CCPD](https://github.com/detectRecog/CCPD) (Chinese City Parking Dataset) is a large and diverse open-source dataset of Chinese license plates. Each image contains one license plate, and each plate includes seven characters:
@@ -76,9 +78,8 @@ For model training and evaluation:
   -  CCPD-Weather 
   -  CCPD-Challenge 
 
----
-## Data Augmentation
 
+## Data Augmentation
 To address the limited size of the training set and to improve generalization across challenging test sub-datasets, we applied extensive **data augmentation**. This helps prevent overfitting and enhances the model’s robustness to various real-world conditions.
 
 We designed **ad-hoc transformations** tailored to the characteristics of the different CCPD sub-datasets. The augmentations simulate conditions such as camera distortion, motion, lighting, and environmental effects. The applied transformations include:
@@ -97,9 +98,6 @@ The figure below illustrates examples of augmented license plate images:
 
 ![Data Augmentation](figures/augmentation.png)
 
-
-
----
 ## Baseline
 
 **TODO**: Breve descriziomn della detection
@@ -108,7 +106,6 @@ The baseline recognizer uses a **CNN + BiLSTM + Linear** architecture to convert
 
 The width dimension is treated as the temporal axis and fed to a 2-layer **Bidirectional LSTM**. The model selects 7 fixed time steps to produce 7 character predictions, each mapped to one of 68 possible classes through a linear layer. Training is performed using **Cross Entropy Loss**.
 
----
 ## YOLOvs-PDLPR
 
 ### YOLOv5
@@ -135,7 +132,6 @@ It comprises three primary modules:
 
 The training is performed using **CTC Loss**.
 
----
 ## Metric
 
 Since each image in the CCPD dataset contains only a **single license plate (LP)**, we focus on **accuracy** rather than recall. Each detector is allowed to predict **only one bounding box per image**.
@@ -149,10 +145,15 @@ The evaluation is divided into three parts:
 - **Combined Detection and Recognition**:  A result is considered fully correct when the predicted bounding box has **IoU > 0.6**, and **all characters** in the license plate are correctly recognized.
 
 
----
+## Checkpoints
+
+The trained model checkpoints for both the **PDLPR architecture** and the **baseline recognizer** are too large to be included directly in the repository.  
+You can download them from the following Google Drive link: [Google Drive](https://drive.google.com/drive/folders/1BcgfnjKgwZWvo-_ba3Pz2cMOwXfg_at8?usp=drive_link).
+
+
 ## Results
 
----
+
 
 ## References
 

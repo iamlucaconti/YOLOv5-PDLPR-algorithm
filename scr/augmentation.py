@@ -9,7 +9,32 @@ import torch
 
 
 class RandomColorPad:
+    """
+     Apply random padding to an image with a specified color.
+
+    Padding is applied symmetrically to the top/bottom and left/right
+    with randomly selected values within given ranges.
+
+    """
     def __init__(self, pad_y_range=(5, 15), pad_x_range=(10, 30), color_pad = "black"):
+        """
+        Parameters
+        ----------
+        pad_y_range : tuple of int
+            Range (min_y, max_y) for vertical padding (top and bottom). Default is (5, 15).
+        pad_x_range : tuple of int
+            Range (min_x, max_x) for horizontal padding (left and right). Default is (10, 30).
+        color_pad : str
+            Padding color mode. Use "black" for black padding (0), or any other string
+            to sample a random RGB color. Default is "black".
+
+        Notes
+        -----
+        - The input image must be a PIL Image.
+        - The padding is applied using torchvision.transforms.functional.pad.
+        
+        """
+        
         self.pad_y_range = pad_y_range  # (min_y, max_y)
         self.pad_x_range = pad_x_range  # (min_x, max_x)
         self.color_pad = color_pad
@@ -31,7 +56,28 @@ class RandomColorPad:
     
     
 class RandomMotionBlur:
+    """
+    Apply a motion blur effect to a PIL image with a given probability.
+
+    The blur simulates camera motion by convolving the image with a directional linear kernel.
+
+    """
     def __init__(self, p=0.5, kernel_size=(3, 9)):
+        """
+        Parameters
+        ----------
+        p : float
+            Probability of applying the motion blur. Default is 0.5.
+        kernel_size : tuple
+            Range of kernel sizes to sample from (min, max). Only odd integers are used.
+
+        Notes
+        -----
+        - The image is first converted to a NumPy array for OpenCV processing.
+        - A random odd kernel size and blur direction (angle in degrees) are selected.
+        - The kernel is applied using OpenCV's `filter2D`.
+        - The blurred image is then converted back to a PIL Image.
+        """
         self.p = p
         self.kernel_size = kernel_size
 
@@ -165,10 +211,26 @@ class AddFog:
 
 
 class MatrixEffect:
+    """
+    Apply a custom green-tinted "Matrix"-style effect to a PIL image with a given probability.
+    The effect darkens and alters the RGB channels to emphasize green tones.
+    
+    """
     def __init__(self, p=0.5, intensity=(0.4, 0.8)):
         """
-        p: probabilità di applicare l'effetto
-        intensity: intervallo per il fattore di scurimento/contrasto
+        Parameters
+        ----------
+        p : float
+            Probability of applying the Matrix effect. Default is 0.5.
+        intensity : tuple of float
+            Range of the contrast/darkening factor applied to the image. Values are typically between 0.4 and 0.8.
+
+        Notes
+        -----
+        - The image is converted to a NumPy array and normalized to [0, 1] for processing.
+        - The red and blue channels are reduced more than green to simulate a green-dominant color scheme.
+        - A higher contrast factor is applied when the average luminance is low.
+        - The result is converted back to a PIL Image.
         """
         self.p = p
         self.intensity = intensity
@@ -325,7 +387,30 @@ class BlockShiftTransform:
 
 
 class DitherEffect:
+    """
+    Apply a dithering effect to a PIL image using a specified palette mode and dithering algorithm.
+
+    Dithering simulates color depth reduction by diffusing pixels, which can give a stylized or retro appearance.
+
+    """
     def __init__(self, dither=Image.FLOYDSTEINBERG, palette_mode='P', p=1.0):
+        """
+        Parameters
+        ----------
+        dither : int
+            Dithering method used during conversion. Default is `Image.FLOYDSTEINBERG`.
+            Other options include `Image.NONE`.
+        palette_mode : str
+            Color mode for dithering. Default is 'P' (8-bit palette mode).
+        p : float
+            Probability of applying the effect. Default is 1.0 (always applied).
+
+        Notes
+        -----
+        - The image is first converted to the specified palette mode using the given dithering method.
+        - Then it's converted back to RGB to keep compatibility with further processing steps.
+        - This transformation can simulate a pixelated or vintage look depending on the parameters.
+        """
         self.dither = dither
         self.palette_mode = palette_mode
         self.p = p
@@ -335,7 +420,8 @@ class DitherEffect:
             img = img.convert(self.palette_mode, dither=self.dither)
             img = img.convert('RGB')
         return img
-    
+
+
 # -----------------------------------------------------------------------------------------------
 ## Simulate DB
 LowResolutionTransform = transforms.Compose([
