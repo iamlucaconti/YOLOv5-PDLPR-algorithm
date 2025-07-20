@@ -25,20 +25,33 @@ PDLPR-algorithm/
 ├── src/                         # Core source code
 │   ├── attention.py             # Self-attention and cross-attention modules
 │   ├── augmentation.py          # Data augmentation transformations
-│   ├── baseline.py              # Baseline license plate recognizer (CNN + BiLSTM)
 │   ├── decoder.py               # Decoder module for the PDLPR architecture
 │   ├── encoder.py               # Encoder module for the PDLPR architecture
 │   ├── feature_extractor.py     # IGFE
 │   ├── pdlpr.py                 # Main PDLPR model structure
 │   ├── trainer.py               # Training and evaluation utilities
 │   ├── utility.py               # Helper functions: decoding, dataset creation, etc.
-│   └── README.md                # Documentation for baseline and PDLPR components
+│   └── README.md                # Documentation for PDLPR components
 │
+├── baseline_scr/                # Baseline source code
+│   ├── detection/               # Baseline license plate detection
+|   |   ├── model.py             # Module for the baseline detection architecture
+|   |   └── trainer.py           # Training and evaluation utilities
+|   |
+│   ├── recognition/             # Baseline license plate recognizer (CNN + BiLSTM)
+|   |   ├── module.py            # CNN + BiLSTM module for the baseline architecture
+|   |   └── trainer_rec.py       # Training and evaluation utilities
+|   |
+│   └── README.md                # Documentation for baseline components
+|
+├── checkpoints/                 # Checkpoints of the trained models
+|
 ├── presentation/                # Slides with results and analysis
+|
 ├── figures/                     # Figures used in README and presentation
 │
 ├── pdlpr-main.ipynb             # Notebook for training and evaluating PDLPR
-├── inference-yolov5-pdlpr.ipynb # Notebook for YOLOv5+PDLPR
+├── inference-yolov5-pdlpr.ipynb # Notebook for evaluate YOLOv5+PDLPR
 ├── baseline-recognition.ipynb   # Notebook for training the baseline recognizer
 └── README.md                    # Project overview and documentation
 ```

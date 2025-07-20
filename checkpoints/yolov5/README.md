@@ -1,0 +1,1 @@
+Checkpont of fine-tuned YOLOv5.

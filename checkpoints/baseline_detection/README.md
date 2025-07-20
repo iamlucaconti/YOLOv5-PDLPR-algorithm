@@ -1,0 +1,1 @@
+Checkpoint of the baseline detection.
