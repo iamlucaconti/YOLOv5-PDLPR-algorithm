@@ -94,30 +94,6 @@ class RandomGaussianBlur:
             return img.filter(ImageFilter.GaussianBlur(radius=r))
         return img
 
-class AddNoise:
-    """Apply random Gaussian noise to an image with a given probability."""
-    
-    def __init__(self, p=0.5, noise_level=(0.02, 0.08)):
-        """
-        Parameters
-        -----------
-        - p: float
-            Probability of applying the noise. Default is 0.5.
-        - noise_level: tuple
-            Range for standard deviation of Gaussian noise.
-        """
-        self.p = p
-        self.noise_level = noise_level
-
-    def __call__(self, img):
-        if random.random() > self.p:
-            return img
-        np_img = np.array(img).astype(np.float32) / 255.0
-        noise_std = random.uniform(self.noise_level[0], self.noise_level[1])
-        noise = np.random.normal(0, noise_std, np_img.shape)
-        np_img = np.clip(np_img + noise, 0, 1)
-        return Image.fromarray((np_img * 255).astype(np.uint8))
-
 
 class SimulateDistance:
     """
