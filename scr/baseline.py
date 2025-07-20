@@ -47,7 +47,7 @@ class BaselineRecognizer(nn.Module):
 
         self.char_projection = nn.Linear(512 * 2, num_classes)
 
-        # Posizioni fisse nella sequenza
+        # Fixed position in the sequence
         step = self.sequence_length // self.num_chars
         offset = step // 2
         self.register_buffer("output_positions", torch.tensor(

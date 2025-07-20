@@ -48,7 +48,9 @@ It comprises three primary modules:
 ---
 #### IGFE
 
-The **IGFE** module consists of a Focus Structure module, two ConvDownSampling modules, and four RESBLOCK modules. 
+The **IGFE** module consists of a Focus Structure module, two ConvDownSampling modules, and four RESBLOCK modules as shown below.
+![IGFE.](/figures/igfe.png)
+
 
 - **Focus Structure module**  was used to conduct picture slicing operations, and in its operation process a value was taken at each interval of one pixel in a input picture so that one picture was equally divided into four feature maps. Then, they were concatenated along the channel direction. Thus a three‑channel image became a 12‑channel feature map with half the original width and height. Finally, the obtained feature map is convolved to perform the downsampling
 operation. A Focus Structure is better than other ways of downsampling because it does not lose any feature information. This means that the extracted semantic information will be more comprehensive.
@@ -60,12 +62,16 @@ Unlike BatchNorm, which depends on batch statistics and tends to be unstable whe
 
 ---
 #### Encoder
-As in the original paper ([Tao et al.](https://www.mdpi.com/1424-8220/24/9/2791)), the **Encoder** consists of three encoding units connected via residual connections. Each unit includes four submodules:
+As in the original paper ([Tao et al.](https://www.mdpi.com/1424-8220/24/9/2791)), the **Encoder** consists of three encoding units connected via residual connections.
+
+Each unit includes four submodules:
 
 1. CNN BLOCK1
 2. Multi-Head Attention (MHA)
 3. NN BLOCK2
 4. Add & Norm
+
+![Encoder.](/figures/encoder.png)
 
 The structure of the **CNN BLOCK** modules is similar to the one described previously.
 
@@ -104,6 +110,8 @@ The **parallel decoder** is composed of three **decoding units**, each containin
 4. **Add & Norm**
 5. **Feed-Forward Network (FFN)**
 6. **Add & Norm**
+
+![Dencoder.](/figures/decoder.png)
 
 The **Multi-Head Attention** and **Add & Norm** modules follow the same structure described earlier.
 

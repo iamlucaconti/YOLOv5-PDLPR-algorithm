@@ -66,11 +66,8 @@ The dataset is divided into nine sub-datasets, each representing different chall
 | **CCPD-NP**        | Images of new cars with no visible license plate. |
 
 
-For model training and evaluation:
-
-- **Training set**: 49,000 randomly selected samples from the  CCPD-Base sub-dataset.
-- **Validation set**: 1,000 samples from the same  CCPD-Base sub-dataset.
-- **Testing set**: Six challenging sub-datasets were used for evaluation:
+For model **training** and **validation** we considered only 50,000 randomly selected samples from the  CCPD-Base sub-dataset.
+Six challenging sub-datasets of 1,000 samples were used for **evaluation**:
   -  CCPD-DB 
   -  CCPD-FN 
   -  CCPD-Rotate 
@@ -94,7 +91,7 @@ We designed **ad-hoc transformations** tailored to the characteristics of the di
 - Simulated fog and nighttime conditions
 - Other visual perturbations
 
-The figure below illustrates examples of augmented license plate images:
+The figure below illustrates examples of augmented license plate images for the recognition task:
 
 ![Data Augmentation](figures/augmentation.png)
 
@@ -102,15 +99,19 @@ The figure below illustrates examples of augmented license plate images:
 
 **TODO**: Breve descriziomn della detection
 
-The baseline recognizer uses a **CNN + BiLSTM + Linear** architecture to convert a license plate image into a sequence of character logits. A convolutional backbone extracts spatial features from input images of shape `[B, 3, 48, 144]`, producing a feature map of shape `[B, 256, 12, 36]`.
-
+The **baseline recognizer** uses a **CNN + BiLSTM + Linear** architecture to convert a license plate image into a sequence of character logits. A convolutional backbone extracts spatial features from input images of shape `[B, 3, 48, 144]`, producing a feature map of shape `[B, 256, 12, 36]`.
 The width dimension is treated as the temporal axis and fed to a 2-layer **Bidirectional LSTM**. The model selects 7 fixed time steps to produce 7 character predictions, each mapped to one of 68 possible classes through a linear layer. Training is performed using **Cross Entropy Loss**.
 
 ## YOLOvs-PDLPR
 
 ### YOLOv5
 
-[YOLOv5](https://github.com/ultralytics/yolov5)
+[YOLOv5](https://github.com/ultralytics/yolov5) is a computer vision model developed by [Ultralytics](https://www.ultralytics.com/). We **fine-tuned** their pre-trained model using a two-phase training process:
+
+1. **Warm-up phase:** We trained the model for 5 epochs with the `--freeze` parameter set to 10, using an initial learning rate of 0.001.
+2. **Fine-tuning phase:** We then continued training for an additional 40 epochs, lowering the learning rate to 0.0005 and unfreezing the layers as needed.
+
+
 
 ### PDLPR
 
@@ -132,7 +133,7 @@ It comprises three primary modules:
 
 The training is performed using **CTC Loss**.
 
-## Metric
+## Metrics
 
 Since each image in the CCPD dataset contains only a **single license plate (LP)**, we focus on **accuracy** rather than recall. Each detector is allowed to predict **only one bounding box per image**.
 
@@ -147,8 +148,7 @@ The evaluation is divided into three parts:
 
 ## Checkpoints
 
-The trained model checkpoints for both the **PDLPR architecture** and the **baseline recognizer** are too large to be included directly in the repository.  
-You can download them from the following Google Drive link: [Google Drive](https://drive.google.com/drive/folders/1BcgfnjKgwZWvo-_ba3Pz2cMOwXfg_at8?usp=drive_link).
+The trained model checkpoints for both the **PDLPR architecture** and the **baseline recognizer** are too large to be included directly in the repository. You can download them from [Google Drive](https://drive.google.com/drive/folders/1BcgfnjKgwZWvo-_ba3Pz2cMOwXfg_at8?usp=drive_link).
 
 
 ## Results
