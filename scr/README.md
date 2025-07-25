@@ -1,12 +1,12 @@
 
 
-## YOLOvs-PDLPR
+# YOLOvs-PDLPR
 
-### YOLOv5
+## YOLOv5
 
 [YOLOv5](https://github.com/ultralytics/yolov5)
 
-### PDLPR
+## PDLPR
 
 The PDLPR model architecture is illustrated in the figure below:
 ![The overall framework of the license plate recognition algorithm.](/figures/pdlpr.png)
@@ -24,7 +24,7 @@ It comprises three primary modules:
    - Utilizes **Multi-Head Attention** to decode the encoder's output feature vector.  
    - Predicts the final license plate sequence.  
 ---
-#### IGFE
+### IGFE
 
 The **IGFE** module consists of a Focus Structure module, two ConvDownSampling modules, and four RESBLOCK modules as shown below.
 ![IGFE.](/figures/igfe.png)
@@ -39,7 +39,7 @@ Unlike BatchNorm, which depends on batch statistics and tends to be unstable whe
 - **ConvDownSampling** modules are similar in structure to the **CNN BLOCK**, but they use a `Conv2D` layer with `stride = 1` and `kernel size = 3`.The first ConvDownSampling modules has 256 output channels while the second one has 512 output channels.
 
 ---
-#### Encoder
+### Encoder
 As in the original paper ([Tao et al.](https://www.mdpi.com/1424-8220/24/9/2791)), the **Encoder** consists of three encoding units connected via residual connections.
 
 Each unit includes four submodules:
@@ -64,7 +64,7 @@ After attention is computed, **CNN BLOCK2** is used to reduce the feature dimens
 Finally, the **Add & Norm** module connects the input and output of the attention mechanism via a residual connection and applies **Layer Normalization**. 
 
 ---
-#### Parallel Decoder
+### Parallel Decoder
 
 The **CNN BLOCK3** and **CNN BLOCK4** adjust the dimensionality of the encoder’s output feature vector to `512 × 1 × 18` before decoding. This dimensionality reduction helps to lower the computational load on the parallel decoder.
 
